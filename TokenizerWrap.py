@@ -3,6 +3,7 @@
 # import libraries
 from tensorflow.python.keras.preprocessing.text import Tokenizer
 from tensorflow.python.keras.preprocessing.sequence import pad_sequences
+import numpy as np
 
 
 class TokenizerWrap(Tokenizer):
@@ -22,9 +23,11 @@ class TokenizerWrap(Tokenizer):
             self.int_seq = [list(reversed(sequence)) for sequence in self.int_seq]
 
         # length of pre-padding int_sequence
-        self.seq_len = [len(seq) for seq in self.int_seq]
-        self.max_len = max_len  
-        self.padded_tokens = pad_sequences(self.int_seq, maxlen=self.max_len, padding = padding,truncating="post")
+        self.num_tokens = [len(seq) for seq in self.int_seq]
+
+        self.max_len = np.mean(self.num_tokens) + 2 * np.std(self.num_tokens)
+        self.max_len= int(self.max_len)
+        self.padded_tokens = np.array(pad_sequences(self.int_seq, maxlen=self.max_len, padding = padding,truncating="post"))
 
     def get_index(self, word):
         # use thi func to get the start mark index and end mark index in the dictionary
@@ -32,6 +35,25 @@ class TokenizerWrap(Tokenizer):
             return self.word_index[word]
         except Exception as e:
             print(e)
+
+    def text_to_tokens(self, text, reverse=False, padding=False):
+        tokens = self.texts_to_sequences([text])
+        tokens = np.array(tokens)
+
+        if reverse:
+            tokens = np.flip(tokens, axis=1)
+            truncating = 'pre'
+        else:
+            truncating = 'post'
+        if padding:
+            tokens = pad_sequences(tokens, maxlen=self.max_len,
+                                   padding='pre', truncating=truncating)
+
+        return tokens
+
+    def token_word(self,token):
+        return self.index_word[token]
+
 
 
 

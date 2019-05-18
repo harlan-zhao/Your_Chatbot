@@ -1,11 +1,10 @@
 # import dependencies
 import tensorflow as tf
+import numpy as np
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.layers import Input, Dense, GRU, Embedding
 from tensorflow.python.keras.optimizers import RMSprop
 from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
-
-
 class RNN_Model(object):
     def __init__(self, input_config, model_config):
         '''
@@ -16,60 +15,75 @@ class RNN_Model(object):
         self.decoder_input_data = input_config.decoder_input
         self.decoder_output_data = input_config.decoder_output
         self.num_words = input_config.num_words
+        self.source_object = input_config.source_object
+        self.dest_object= input_config.dest_object
+        self.SOS = input_config.SOS
+        self.EOS = input_config.EOS
         self.embedding_size = model_config.embedding_size      # embedding size
         self.state_size = model_config.state_size               # state size
-        self.lr =  model_config.RMSprop_lr                     # learning rate for optimizer RMSprop
+        self.lr = model_config.RMSprop_lr                     # learning rate for optimizer RMSprop
         self.save_path = model_config.ckpt_save_path           # full path of the checkpoint file
-        self.validation_split = model_config.validation.split  # validation split
+        self.validation_split = model_config.validation_split  # validation split
+        self.batch_size = model_config.batch_size
+        self.epochs = model_config.epochs
 
-    def run(self):
+    def run(self, mode=None,text=None):
+
         # build the encoder, define the placeholders
         encoder_input = Input(shape=(None,), name='encoder_input')
         encoder_embedding = Embedding(input_dim=self.num_words, output_dim=self.embedding_size, name='encoder_embedding')
-        encoder_gru1 = GRU(self.state_size, name='encoder_gru1',
-                           return_sequences=True)
-        encoder_gru2 = GRU(self.state_size, name='encoder_gru2',
-                           return_sequences=True)
-        encoder_gru3 = GRU(self.state_size, name='encoder_gru3',
-                           return_sequences=False)
+        encoder_gru1 = GRU(self.state_size, name='encoder_gru1', return_sequences=True)
+        encoder_gru2 = GRU(self.state_size, name='encoder_gru2', return_sequences=True)
+        encoder_gru3 = GRU(self.state_size, name='encoder_gru3', return_sequences=False)
 
         # connect all the placeholders in encoder layer
-        encoder_link = encoder_input
-        encoder_link = encoder_embedding(encoder_link)
-        encoder_link = encoder_gru1(encoder_link)
-        encoder_link = encoder_gru2(encoder_link)
-        encoder_link = encoder_gru3(encoder_link)
-        encoder_output = encoder_link
+        def encoder_builder():
+            encoder_link = encoder_input
+            encoder_link = encoder_embedding(encoder_link)
+            encoder_link = encoder_gru1(encoder_link)
+            encoder_link = encoder_gru2(encoder_link)
+            encoder_link = encoder_gru3(encoder_link)
+            encoder_output1 = encoder_link
+            return encoder_output1
+        encoder_output = encoder_builder()
 
         # build the decoder, define the placeholders
         decoder_initial_state = Input(shape=(self.state_size,),name='decoder_initial_state')
         decoder_input = Input(shape=(None,), name='decoder_input')
         decoder_embedding = Embedding(input_dim=self.num_words, output_dim=self.embedding_size, name='decoder_embedding')
-        decoder_gru1 = GRU(self.state_size, name='decoder_gru1',
-                           return_sequences=True)
-        decoder_gru2 = GRU(self.state_size, name='decoder_gru2',
-                           return_sequences=True)
-        decoder_gru3 = GRU(self.state_size, name='decoder_gru3',
-                           return_sequences=True)
+        decoder_gru1 = GRU(self.state_size, name='decoder_gru1', return_sequences=True)
+        decoder_gru2 = GRU(self.state_size, name='decoder_gru2', return_sequences=True)
+        decoder_gru3 = GRU(self.state_size, name='decoder_gru3', return_sequences=True)
         decoder_dense = Dense(self.num_words, activation='linear', name='decoder_output')
 
-        # connect all the placeholders in decoder layer
-        decoder_link = decoder_input
-        decoder_link = decoder_embedding(decoder_link)
-        decoder_link = decoder_gru1(decoder_link, initial_state=decoder_initial_state)
-        decoder_link = decoder_gru2(decoder_link, initial_state=decoder_initial_state)
-        decoder_link = decoder_gru3(decoder_link, initial_state=decoder_initial_state)
-        decoder_output = decoder_dense(decoder_link)
+        # connect all the placeholders in decoder layerd
+        def decoder_builder(initial_state):
+            decoder_link = decoder_input
+            decoder_link = decoder_embedding(decoder_link)
+            decoder_link = decoder_gru1(decoder_link, initial_state=initial_state)
+            decoder_link = decoder_gru2(decoder_link, initial_state=initial_state)
+            decoder_link = decoder_gru3(decoder_link, initial_state=initial_state)
+            decoder_output1 = decoder_dense(decoder_link)
+            return decoder_output1
+
+
+        # adjusted loss function, cuz the original sparse_crossentropy gives an error for some reasons
+        def sparse_crossentropy(y_true, y_pred):
+            loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
+            loss_mean = tf.reduce_mean(loss)
+            return loss_mean
 
         # connect the model
-        model = Model(inputs=[encoder_input, decoder_input], outputs=[decoder_output])
+        model = Model(inputs=[encoder_input, decoder_input], outputs=[decoder_builder(initial_state=encoder_output)])
         model_encoder = Model(inputs=[encoder_input], outputs=[encoder_output])
+        decoder_output = decoder_builder(initial_state=decoder_initial_state)
         model_decoder = Model(inputs=[decoder_input, decoder_initial_state], outputs=[decoder_output])
 
         # finalized the model
         decoder_target = tf.placeholder(dtype='int32', shape=(None, None))
-        optimizer = RMSprop(lr=self.lr)
-        model.compile(optimizer=optimizer, loss="sparse_cross_entropy", target_tensors=[decoder_target])
+        # optimizer = RMSprop(lr=self.lr)
+        optimizer = RMSprop(lr=1e-3)
+        model.compile(optimizer=optimizer, loss=sparse_crossentropy, target_tensors=[decoder_target])
 
         # ser early-stopping and tensorboard and save check point
         checkpoint = ModelCheckpoint(filepath=self.save_path, monitor='val_loss', verbose=1, save_weights_only=True, save_best_only=True)
@@ -77,7 +91,7 @@ class RNN_Model(object):
         tensorboard = TensorBoard(log_dir='./logs/', histogram_freq=0, write_graph=False)
         callbacks = [early_stopping, checkpoint, tensorboard]
 
-        # load check point if exists
+        #load check point if exists
         try:
             model.load_weights(self.save_path)
         except Exception as error:
@@ -85,14 +99,65 @@ class RNN_Model(object):
             print(error)
 
         # pack inputs and outputs
-        input = {'encoder_input': encoder_input, 'decoder_input': decoder_input}
-        output = {'decoder_output': decoder_output}
+        input_data = {'encoder_input': self.encoder_input_data, 'decoder_input': self.decoder_input_data}
+        output_data = {'decoder_output': self.decoder_output_data}
 
         # start training
-        model.fit(x=input, y=output, batch_size=512, epochs=5, validation_split=self.validation_split, callbacks=callbacks)
+        if mode == None:
+            model.fit(x=input_data, y=output_data, batch_size=self.batch_size, epochs=self.epochs,
+                      validation_split=self.validation_split, callbacks=callbacks)
+        # make predictions for interference
 
+        elif mode == "predict":
+            def predict(text):
+                input_tokens = self.source_object.text_to_tokens(text=text,reverse=True,padding=True)
+                initial_state = model_encoder.predict(input_tokens)
+                max_length = self.dest_object.max_len
+                decoder_input_data = np.zeros(shape=(1,max_length), dtype=np.int)
+                token_int = self.dest_object.get_index(self.SOS)
+                output_text = ''
+                count = 0
+                while token_int != self.dest_object.get_index(self.EOS) and count < max_length:
+                    decoder_input_data[0, count] = token_int
+                    x_data = {'decoder_initial_state': initial_state, 'decoder_input': decoder_input_data}
 
+                    # Input this data to the decoder and get the predicted output.
+                    decoder_output = model_decoder.predict(x_data)
 
+                    # Get the last predicted token as a one-hot encoded array.
+                    token_onehot = decoder_output[0, count, :]
+
+                    # Convert to an integer-token.
+                    token_int = np.argmax(token_onehot)
+
+                    # Lookup the word corresponding to this integer-token.
+                    sampled_word = self.dest_object.token_word(token_int)
+                    if sampled_word != self.EOS:
+                        # Append the word to the output-text.
+                        output_text += " " + sampled_word
+
+                    # Increment the token-counter.
+                    count += 1
+
+                if output_text == "":
+                    answers = ["i don't know what to say",
+                            "i not not telling you what i am thinking",
+                            "i don't understand a single word you said",
+                            "am i stupied? cuz i don't know what you are talking about",
+                            "pardon?",
+                            "sorry, i am gonna work harder to understand you",
+                            "that is something i don't know what to say"]
+                    random = np.random.randint(len(answers))
+                    output_text = answers[random]
+                return output_text
+
+            while True:
+                question = input("--------")
+                print("You: {}".format(question))
+                answer = predict(question)
+                print("Chatbot:{}".format(answer))
+                if question == "kill":
+                    break
 
 
 
