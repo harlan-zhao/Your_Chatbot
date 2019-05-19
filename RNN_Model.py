@@ -151,13 +151,43 @@ class RNN_Model(object):
                     random = np.random.randint(len(answers))
                     output_text = answers[random]
                 return output_text
-            while True:
-                question = input("----you: ")
-                # print("You: {}".format(question))
-                answer = predict(question)
-                print("Chatbot:{}".format(answer))
-                if question == "kill":
-                    break
+
+            # GUI (if MODE ="chat", interact with GUI, go testing it out)
+            import tkinter as tk
+            window = tk.Tk()
+            window.title("Smart Chatbot")
+            # window.configure(background="gray")
+            window.geometry("850x600")
+            display = tk.Text(window, height=12, width=30, font=("Helvetica", 28))
+            display.grid(column=0, row=1)
+
+            def output():
+                res = str(entry.get())
+                entry.delete(0, "end")
+                display.insert(tk.END, "You: " + res + "\n")
+                answer = predict(res)
+                display.insert(tk.END, "ChatBot" + answer + "\n")
+                display.see("end")
+
+            title = tk.Label(text="Chatbot")
+            title.grid(column=0, row=0)
+
+            img = tk.PhotoImage(file="chatbots.gif")
+            lable = tk.Label(window, image=img)
+            lable.grid(row=1, column=1)
+
+            entry = tk.Entry(window, width=100)
+            entry.grid(column=0, row=2)
+
+            button1 = tk.Button(text="send", width=20, command=output)
+            button1.grid(column=1, row=2)
+
+            scrollb = tk.Scrollbar(window, command=display.yview)
+            scrollb.grid(row=1, column=0, sticky='nsew')
+            display['yscrollcommand'] = scrollb.set
+
+            window.mainloop()
+
 
 
 
