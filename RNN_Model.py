@@ -16,7 +16,7 @@ class RNN_Model(object):
         self.decoder_output_data = input_config.decoder_output
         self.num_words = input_config.num_words
         self.source_object = input_config.source_object
-        self.dest_object= input_config.dest_object
+        self.dest_object = input_config.dest_object
         self.SOS = input_config.SOS
         self.EOS = input_config.EOS
         self.embedding_size = model_config.embedding_size      # embedding size
@@ -27,7 +27,7 @@ class RNN_Model(object):
         self.batch_size = model_config.batch_size
         self.epochs = model_config.epochs
 
-    def run(self, mode=None,text=None):
+    def run(self, mode=None):
 
         # build the encoder, define the placeholders
         encoder_input = Input(shape=(None,), name='encoder_input')
@@ -82,7 +82,7 @@ class RNN_Model(object):
         # finalized the model
         decoder_target = tf.placeholder(dtype='int32', shape=(None, None))
         # optimizer = RMSprop(lr=self.lr)
-        optimizer = RMSprop(lr=1e-3)
+        optimizer = RMSprop(lr=self.lr)
         model.compile(optimizer=optimizer, loss=sparse_crossentropy, target_tensors=[decoder_target])
 
         # ser early-stopping and tensorboard and save check point
@@ -94,6 +94,7 @@ class RNN_Model(object):
         #load check point if exists
         try:
             model.load_weights(self.save_path)
+            print("CheckPoint Loaded,{}".format(self.save_path))
         except Exception as error:
             print("Failed CheckPoint")
             print(error)
@@ -106,30 +107,30 @@ class RNN_Model(object):
         if mode == None:
             model.fit(x=input_data, y=output_data, batch_size=self.batch_size, epochs=self.epochs,
                       validation_split=self.validation_split, callbacks=callbacks)
-        # make predictions for interference
 
+        # make predictions for interference
         elif mode == "predict":
+            start_index = self.dest_object.get_index(self.SOS)
+            end_index = self.dest_object.get_index(self.EOS)
             def predict(text):
-                input_tokens = self.source_object.text_to_tokens(text=text,reverse=True,padding=True)
+                input_tokens = self.source_object.text_to_tokens(text=text, reverse=True, padding=True)
                 initial_state = model_encoder.predict(input_tokens)
                 max_length = self.dest_object.max_len
-                decoder_input_data = np.zeros(shape=(1,max_length), dtype=np.int)
-                token_int = self.dest_object.get_index(self.SOS)
-                output_text = ''
+                decoder_input_data = np.zeros(shape=(1, max_length), dtype=np.int)
+                token_int = start_index
+                output_text = ""
                 count = 0
-                while token_int != self.dest_object.get_index(self.EOS) and count < max_length:
+                while token_int != end_index and count < max_length:
                     decoder_input_data[0, count] = token_int
                     x_data = {'decoder_initial_state': initial_state, 'decoder_input': decoder_input_data}
 
                     # Input this data to the decoder and get the predicted output.
                     decoder_output = model_decoder.predict(x_data)
-
                     # Get the last predicted token as a one-hot encoded array.
                     token_onehot = decoder_output[0, count, :]
 
                     # Convert to an integer-token.
                     token_int = np.argmax(token_onehot)
-
                     # Lookup the word corresponding to this integer-token.
                     sampled_word = self.dest_object.token_word(token_int)
                     if sampled_word != self.EOS:
@@ -138,22 +139,21 @@ class RNN_Model(object):
 
                     # Increment the token-counter.
                     count += 1
-
+                # add some basic error answers
                 if output_text == "":
                     answers = ["i don't know what to say",
-                            "i not not telling you what i am thinking",
-                            "i don't understand a single word you said",
-                            "am i stupied? cuz i don't know what you are talking about",
-                            "pardon?",
-                            "sorry, i am gonna work harder to understand you",
-                            "that is something i don't know what to say"]
+                               "i not not telling you what i am thinking",
+                               "i don't understand a single word you said",
+                               "am i stupied? cuz i don't know what you are talking about",
+                               "pardon?",
+                               "sorry, i am gonna work harder to understand you",
+                               "that is something i don't know what to say"]
                     random = np.random.randint(len(answers))
                     output_text = answers[random]
                 return output_text
-
             while True:
-                question = input("--------")
-                print("You: {}".format(question))
+                question = input("----you: ")
+                # print("You: {}".format(question))
                 answer = predict(question)
                 print("Chatbot:{}".format(answer))
                 if question == "kill":

@@ -2,6 +2,10 @@ from RNN_Model import RNN_Model
 from TokenizerWrap import TokenizerWrap
 import re
 
+# choose a MODE "train" or "chat"
+MODE = "chat"
+# MODE = "train"
+
 # build inputs and outputs
 data_src, data_dest = [], []
 num_words = 10000
@@ -10,7 +14,7 @@ EOS = " eeee"   # end of sentence mark
 input_file_path = 'datasets/questions'
 label_file_path = "datasets/answers"
 punc = '[,.!\'?"]'             # use regex get rid of the punctuations in texts
-
+filter_amount = 150           # filter some long sentences that causes wasting computing power
 with open(input_file_path, "rb") as f:
     with open(label_file_path, "rb") as g:
         while True:
@@ -20,7 +24,7 @@ with open(input_file_path, "rb") as f:
                 break
             line1 = str(line1)
             line2 = str(line2)
-            if len(line1) > 100 or len(line2) > 100:
+            if len(line1) > filter_amount or len(line2) > filter_amount:
                 continue
             flag = False
             for letter in ["xe2", "x80", "x99d"]:
@@ -39,8 +43,8 @@ with open(input_file_path, "rb") as f:
             data_dest.append(line2)
 
 # tokenize and pad the sequence
-source_tokenized = TokenizerWrap(texts=data_src, padding="pre", max_len=50, reverse=True,num_words=num_words)
-dest_tokenized = TokenizerWrap(texts=data_dest, padding="post", max_len=50, num_words=num_words)
+source_tokenized = TokenizerWrap(texts=data_src, padding="pre", reverse=True,num_words=num_words)
+dest_tokenized = TokenizerWrap(texts=data_dest, padding="post", num_words=num_words)
 
 
 # organize the input config
@@ -51,13 +55,13 @@ class input_config(object):
     num_words = num_words
     source_object = source_tokenized
     dest_object = dest_tokenized
-    SOS = SOS
-    EOS = EOS
+    SOS = SOS.strip()
+    EOS = EOS.strip()
 
 
 # organize the model config
 class model_config(object):
-    embedding_size = 128  # embedding size
+    embedding_size = 256  # embedding size
     state_size = 512  # state size
     RMSprop_lr = 1e-3  # learning rate for optimizer RMSprop
     ckpt_save_path = "ckpt.keras"  # full path of the checkpoint file
@@ -68,5 +72,10 @@ class model_config(object):
 
 # run the model
 model = RNN_Model(input_config(), model_config())
-model.run(mode="predict",text="how are you doing")
+if MODE == "train":
+    model.run()
+elif MODE == "chat":
+    model.run(mode="predict")
+else:
+    print("Wrong MODE! please choose \"train\" or \"chat\" ")
 
