@@ -5,15 +5,21 @@ This is a chatbot model that you can bring you own datasets(conversations) to tr
 ## My Testing Enviroment
 
 OS: Windows 10 X64
+
 Python Version: 3.5
+
 Tensorflow-gpu Version: 1.9.0
+
 CUDA: 9.0
 
 ## Prerequisites
 
 Tensorflow-gpu   # pip install tensorflow-gpu
+
 Numpy            # pip install numpy  
+
 pandas           # pip install pandas
+
 tkinter          # included in python distributions since python 3.1
 
 ## Datasets Preparation
