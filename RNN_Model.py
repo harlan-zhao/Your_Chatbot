@@ -1,6 +1,7 @@
 # import dependencies
 import tensorflow as tf
 import numpy as np
+import tkinter as tk
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.layers import Input, Dense, GRU, Embedding
 from tensorflow.python.keras.optimizers import RMSprop
@@ -133,7 +134,7 @@ class RNN_Model(object):
                     token_int = np.argmax(token_onehot)
                     # Lookup the word corresponding to this integer-token.
                     sampled_word = self.dest_object.token_word(token_int)
-                    if sampled_word != self.EOS:
+                    if sampled_word != self.EOS.strip():
                         # Append the word to the output-text.
                         output_text += " " + sampled_word
 
@@ -145,7 +146,7 @@ class RNN_Model(object):
                                "i not not telling you what i am thinking",
                                "i don't understand a single word you said",
                                "am i stupied? cuz i don't know what you are talking about",
-                               "pardon?",
+                               "emm,i need think about it?",
                                "sorry, i am gonna work harder to understand you",
                                "that is something i don't know what to say"]
                     random = np.random.randint(len(answers))
@@ -153,7 +154,6 @@ class RNN_Model(object):
                 return output_text
 
             # GUI (if MODE ="chat", interact with GUI, go testing it out)
-            import tkinter as tk
             window = tk.Tk()
             window.title("Smart Chatbot")
             # window.configure(background="gray")
@@ -164,15 +164,15 @@ class RNN_Model(object):
             def output():
                 res = str(entry.get())
                 entry.delete(0, "end")
-                display.insert(tk.END, "You: " + res + "\n")
+                display.insert(tk.END, "~~~~You: " + res + "\n")
                 answer = predict(res)
-                display.insert(tk.END, "ChatBot" + answer + "\n")
+                display.insert(tk.END, "ChatBot: " + answer + "\n")
                 display.see("end")
 
             title = tk.Label(text="Chatbot")
             title.grid(column=0, row=0)
 
-            img = tk.PhotoImage(file="chatbots.gif")
+            img = tk.PhotoImage(file="chatbot_pic.gif")
             lable = tk.Label(window, image=img)
             lable.grid(row=1, column=1)
 

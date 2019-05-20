@@ -11,8 +11,9 @@ from datetime import datetime
 sql_transaction = []
 start_row = 0
 cleanup = 1000000
+data_dir = "G:\AI\Chatbot datasets\RC"
 
-connection = sqlite3.connect('{}.db'.format("new"))
+connection = sqlite3.connect('{}.db'.format("data"))
 c = connection.cursor()
 
 
@@ -123,7 +124,7 @@ if __name__ == '__main__':
     create_table()
     row_counter = 0
     paired_rows = 0
-    data_dir = "G:\AI\Chatbot datasets\RC"   # change the path to where you store your source files
+    # data_dir = "G:\AI\Chatbot datasets\RC"   # change the path to where you store your source files
     with open(data_dir, buffering=1000) as f:
         for row in f:
             row_counter += 1

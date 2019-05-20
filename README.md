@@ -39,7 +39,7 @@ Of course, you can use any datasets you want. Here is an example of what the dat
 
 ### Final Result
 
-![Image of questions](readme_pics/result.jpg)
+![Image of questions](readme_pics/GUI.jpg)
 
 ## Implementation Procedures
 
@@ -57,13 +57,14 @@ Once you have your reddit comment(extracted) file ready. Here is how to train yo
 
 ## Authors
 
-* **Hehe Zhao** [https://github.com/zhaohehe520/Your_Chatbot](https://github.com/zhaohehe520/Your_Chatbot)
+* **Hehe Zhao**
 
-This project is inspired by Magnus Erik Hvass Pedersen and sentdex, by the way, they make great tutorial videos on machine learning and all kinds of tech realated stuff, check their videos out by searching thier names on youtube.
+ [https://github.com/zhaohehe520/Your_Chatbot](https://github.com/zhaohehe520/Your_Chatbot)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License.
+
 ## Acknowledgments
 
 This project is inspired by Magnus Erik Hvass Pedersen and sentdex, by the way, they make great tutorial videos on machine learning and all kinds of tech realated stuff, check their videos out by searching thier names on youtube.Or clik the link below
