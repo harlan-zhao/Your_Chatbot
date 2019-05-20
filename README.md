@@ -67,7 +67,7 @@ This project is licensed under the MIT License.
 
 ## Acknowledgments
 
-This project is inspired by Magnus Erik Hvass Pedersen and sentdex, by the way, they make great tutorial videos on machine learning and all kinds of tech realated stuff, check their videos out by searching thier names on youtube.Or clik the link below
+This project is inspired by Magnus Erik Hvass Pedersen and sentdex, by the way, they make great tutorial videos on machine learning and all kinds of tech realated stuff, check their videos out by searching thier names on youtube.Or click the link below
 
 Hvass Laboratories :  [https://www.youtube.com/channel/UCbba38V6vcglqVL--8kVVmg](https://www.youtube.com/channel/UCbba38V6vcglqVL--8kVVmg)
 
