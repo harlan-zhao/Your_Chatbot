@@ -37,9 +37,6 @@ Of course, you can use any datasets you want. Here is an example of what the dat
 
 ![Image of questions](readme_pics/answers.jpg)
 
-### Final Result
-
-![Image of questions](readme_pics/GUI.jpg)
 
 ## Implementation Procedures
 
